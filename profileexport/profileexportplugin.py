@@ -42,8 +42,8 @@ class ProfileExportPlugin:
         currentMapLayer.featureAtId(selectedFeatureId,  selectedFeature, True,  False )
         #profileGeometry = currentMapLayer.selectedFeatures()[0].geometry()
         profileGeometry = selectedFeature.geometry()
-        print profileGeometry
-        print profileGeometry.exportToWkt()
+        #print profileGeometry
+        #print profileGeometry.exportToWkt()
         
         #geometry needs to be a line
         if profileGeometry.wkbType() != QGis.WKBLineString:
@@ -58,9 +58,9 @@ class ProfileExportPlugin:
             QMessageBox.warning( None,  QCoreApplication.translate( "ProfileExportPlugin", "Line has more than two vertices" ),  QCoreApplication.translate( "ProfileExportPlugin", "The selected line has more than two vertices. Only the first and the second are considered for profile computation") )
         
         startPoint = profilePolyLine[0]
-        print startPoint
+        #print startPoint
         endPoint = profilePolyLine[1]
-        print endPoint
+        #print endPoint
         
         #get input/output file, point distance, value tolerance
         dialog = ProfileExportDialog( self.mIface )
@@ -68,10 +68,10 @@ class ProfileExportPlugin:
             self.writeOutputFile( dialog.rasterLayer(),  dialog.outputFile(),  dialog.pointDistance(),  dialog.maxValueTolerance(),  startPoint,  endPoint )
     
     def writeOutputFile(self,  inputRaster,  outputFile,  pointDistance,  maxValueTolerance,  startPoint,  endPoint):
-        print inputRaster
-        print outputFile
-        print pointDistance
-        print maxValueTolerance
+        #print inputRaster
+        #print outputFile
+        #print pointDistance
+        #print maxValueTolerance
         
         rasterLayer = QgsMapLayerRegistry.instance().mapLayer( inputRaster )
         if rasterLayer is None:
@@ -122,7 +122,7 @@ class ProfileExportPlugin:
                 dIntermediatePointDist = math.sqrt(  ( dx / (nIntermediatePoints + 1) ) * ( dx / (nIntermediatePoints + 1) ) + ( dy / (nIntermediatePoints + 1) ) * ( dy / (nIntermediatePoints + 1) ) )
                 lastIntermediateValue = lastValue
                 for i in range( nIntermediatePoints ):
-                    print 'inserting additional point'
+                    #print 'inserting additional point'
                     dxIntermediate =  dx / ( nIntermediatePoints + 1 ) * ( i+1 )
                     dyIntermediate = dy / ( nIntermediatePoints + 1 ) * ( i + 1 )
                     xIntermediate = currentX - dx + dxIntermediate

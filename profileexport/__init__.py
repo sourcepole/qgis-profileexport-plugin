@@ -18,7 +18,7 @@ def description():
     return QCoreApplication.translate("init","A plugin to export raster profiles to xml files")
 
 def version():
-    return "0.2"
+    return "0.21"
     
 def icon():
 	return "seilkran.jpg"

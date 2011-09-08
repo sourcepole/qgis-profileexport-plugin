@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/plugins/profileexport" >
+        <file>seilkran.jpg</file>
+    </qresource>
+</RCC>

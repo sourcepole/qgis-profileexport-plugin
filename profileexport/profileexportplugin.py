@@ -9,11 +9,18 @@ import math
 import resources
 from profileexportdialog import ProfileExportDialog
 
+import apicompat
+
 class ProfileExportPlugin:
     
     def __init__(self,  iface):
         self.mIface = iface
-        
+
+        if sipv1():
+            self.firstRasterBandValue = self.firstRasterBandValue_1_8
+        else:
+            self.firstRasterBandValue = self.firstRasterBandValue_2_0
+
     def initGui(self):
         self.mAction = QAction( QIcon(":/plugins/profileexport/seilkran.jpg"), "Profile export",  self.mIface.mainWindow() )
         QObject.connect(self.mAction, SIGNAL("triggered()"), self.run)
@@ -37,9 +44,8 @@ class ProfileExportPlugin:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Profile tool needs a single selected feature"),  QCoreApplication.translate("ProfileExportPlugin","Please select the line describing the profile and run the export profile tool again") )
             return
             
-        selectedFeature = QgsFeature()
-        selectedFeatureId = currentMapLayer.selectedFeaturesIds()[0]
-        currentMapLayer.featureAtId(selectedFeatureId,  selectedFeature, True,  False )
+        selectedFeature = currentMapLayer.selectedFeatures()[0]
+
         #profileGeometry = currentMapLayer.selectedFeatures()[0].geometry()
         profileGeometry = selectedFeature.geometry()
         #print profileGeometry
@@ -167,40 +173,48 @@ class ProfileExportPlugin:
         importGisElem = xmlDoc.createElement("import_gis")
         #dist
         distElem = xmlDoc.createElement("dist")
-        distElemText = xmlDoc.createTextNode( QString.number( totDist ) )
+        distElemText = xmlDoc.createTextNode( "{0:f}".format( totDist ) )
         distElem.appendChild( distElemText)
         importGisElem.appendChild( distElem )
         #z0
         z0Elem = xmlDoc.createElement("z0")
-        z0ElemText = xmlDoc.createTextNode( QString.number( z ) )
+        z0ElemText = xmlDoc.createTextNode( "{0:f}".format( z ) )
         z0Elem.appendChild( z0ElemText )
         importGisElem.appendChild( z0Elem )
         #entfernung
         entfElem = xmlDoc.createElement("entfernung")
-        entfElemText = xmlDoc.createTextNode( QString.number( dist ) )
+        entfElemText = xmlDoc.createTextNode( "{0:f}".format( dist ) )
         entfElem.appendChild( entfElemText )
         importGisElem.appendChild( entfElem )
         #höhe
         hoeheElem = xmlDoc.createElement(u"höhe" )
-        hoeheElemText = xmlDoc.createTextNode( QString.number( dz) )
+        hoeheElemText = xmlDoc.createTextNode( "{0:f}".format( dz) )
         hoeheElem.appendChild( hoeheElemText )
         importGisElem.appendChild( hoeheElem )
         #koord_e
         koordEElem = xmlDoc.createElement("koord_e")
-        koordEElemText = xmlDoc.createTextNode( QString.number(wgs_x, 'f', 8 ) )
+        koordEElemText = xmlDoc.createTextNode( "{0:.8f}".format( wgs_x ) )
         koordEElem.appendChild( koordEElemText)
         importGisElem.appendChild( koordEElem )
         #koord_n
         koordNElem = xmlDoc.createElement("koord_n")
-        koordNElemText = xmlDoc.createTextNode( QString.number( wgs_y,  'f',  8 ) )
+        koordNElemText = xmlDoc.createTextNode( "{0:.8f}".format( wgs_y ) )
         koordNElem.appendChild( koordNElemText )
         importGisElem.appendChild( koordNElem )
         
         parentElement.appendChild( importGisElem )
-        
-    def firstRasterBandValue(self,  point,  rasterLayer):
+
+    def firstRasterBandValue_1_8(self,  point,  rasterLayer):
         res,  ident = rasterLayer.identify( point )
-        
+
         if len(ident) < 1:
             return -9999
         return ident[ ident.keys()[0] ].toDouble()[0]
+
+    def firstRasterBandValue_2_0(self,  point,  rasterLayer):
+        identifyResult = rasterLayer.dataProvider().identify( point, QgsRaster.IdentifyFormatValue )
+
+        if not identifyResult.isValid():
+            return -9999
+        results = identifyResult.results()
+        return pyfloat( results[ results.keys()[0] ] )

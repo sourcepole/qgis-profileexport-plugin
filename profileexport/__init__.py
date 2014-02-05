@@ -1,33 +1,21 @@
 # -*- coding: utf-8 -*-
-from PyQt4.QtCore import *
-from profileexportplugin import ProfileExportPlugin
-import locale
-import os
-
-#support for multiple languages
-translator = QTranslator(QCoreApplication.instance())
-localeCode = locale.getlocale()[0]
-if localeCode:
-    translator.load("profileexport_" + locale.getlocale()[0] + ".qm",  os.path.dirname(__file__))
-    QCoreApplication.instance().installTranslator(translator)
-
-def name():
-    return QCoreApplication.translate("init","Profile export")
-
-def description():
-    return QCoreApplication.translate("init","A plugin to export raster profiles to xml files")
-
-def version():
-    return "0.21"
-    
-def icon():
-	return "seilkran.jpg"
-
-def qgisMinimumVersion():
-    return "1.7"
-
-def authorName():
-    return "Sourcepole"
+"""
+***************************************************************************
+    Profile Export
+    A plugin to export raster profiles to xml files
+    ---------------------
+    Copyright            : (C) 2011-2014 by Sourcepole
+    Email                : qgis at sourcepole dot ch
+***************************************************************************
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+***************************************************************************
+"""
 
 def classFactory(iface):
+    from profileexportplugin import ProfileExportPlugin
     return ProfileExportPlugin(iface)

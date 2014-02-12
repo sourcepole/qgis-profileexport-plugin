@@ -6,7 +6,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 from PyQt4.QtXml import *
 import math
-import resources
+import resources_rc
 from profileexportdialog import ProfileExportDialog
 
 import apicompat

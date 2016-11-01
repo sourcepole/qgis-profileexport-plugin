@@ -16,7 +16,9 @@ class ProfileExportPlugin:
     def __init__(self,  iface):
         self.mIface = iface
 
-        if sipv1():
+        if sipv1() and QCoreApplication.applicationName().contains( "Enterprise" ):
+            self.firstRasterBandValue = self.firstRasterBandValue_13
+        elif sipv1() :
             self.firstRasterBandValue = self.firstRasterBandValue_1_8
         else:
             self.firstRasterBandValue = self.firstRasterBandValue_2_0
@@ -210,6 +212,12 @@ class ProfileExportPlugin:
         if len(ident) < 1:
             return -9999
         return ident[ ident.keys()[0] ].toDouble()[0]
+        
+    def firstRasterBandValue_13(self,  point,  rasterLayer ):
+        identifyResult = rasterLayer.dataProvider().identify( point, QgsRasterDataProvider.IdentifyFormatValue )
+        if len(identifyResult) < 1:
+            return -9999
+        return pyfloat( identifyResult[ identifyResult.keys()[0] ] )
 
     def firstRasterBandValue_2_0(self,  point,  rasterLayer):
         identifyResult = rasterLayer.dataProvider().identify( point, QgsRaster.IdentifyFormatValue )

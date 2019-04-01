@@ -15,7 +15,7 @@
 *                                                                         *
 ***************************************************************************
 """
+from .profileexportplugin import ProfileExportPlugin
 
 def classFactory(iface):
-    from profileexportplugin import ProfileExportPlugin
     return ProfileExportPlugin(iface)

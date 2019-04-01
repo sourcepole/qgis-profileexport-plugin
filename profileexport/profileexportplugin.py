@@ -1,43 +1,34 @@
 # -*- coding: utf-8 -*-
-
+from PyQt5.QtCore import QCoreApplication, QFile, QIODevice, QObject, QTextStream
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QAction, QDialog, QMessageBox
+from PyQt5.QtXml import QDomDocument, QDomElement
 from qgis.core import *
-from qgis.gui import  *
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.QtXml import *
+from qgis.gui import *
 import math
-import resources_rc
-from profileexportdialog import ProfileExportDialog
-
-import apicompat
+from .profileexportdialog import ProfileExportDialog
+from .resources_rc import *
 
 class ProfileExportPlugin:
-    
-    def __init__(self,  iface):
+    def __init__(self, iface ):
         self.mIface = iface
-
-        if sipv1() and QCoreApplication.applicationName().contains( "Enterprise" ):
-            self.firstRasterBandValue = self.firstRasterBandValue_13
-        elif sipv1() :
-            self.firstRasterBandValue = self.firstRasterBandValue_1_8
-        else:
-            self.firstRasterBandValue = self.firstRasterBandValue_2_0
-
+        
     def initGui(self):
         self.mAction = QAction( QIcon(":/plugins/profileexport/seilkran.jpg"), "Profile export",  self.mIface.mainWindow() )
-        QObject.connect(self.mAction, SIGNAL("triggered()"), self.run)
+        self.mAction.triggered.connect( self.run )
         self.mIface.addToolBarIcon( self.mAction )
         
     def unload(self):
         self.mIface.removeToolBarIcon( self.mAction )
         
     def run(self):
-        #get startpoint / endpoint from selected feture and bail out in case of error
+        print( 'run' )
+        
         currentMapLayer = self.mIface.mapCanvas().currentLayer()
         if currentMapLayer is None:
             QMessageBox.critical( None,  QCoreApplication.translate("ProfileExportPlugin","No current layer"),  QCoreApplication.translate("ProfileExportPlugin", "There is no current layer. Please highlight a layer in the legend") )
             return
-            
+        
         if not currentMapLayer.type() == QgsMapLayer.VectorLayer:
             QMessageBox.critical( None,  QCoreApplication.translate("ProfileExportPlugin", "Not a vector layer"),  QCoreApplication.translate("ProfileExportPlugin", "The profile export tool needs a selected line in the current vector layer") )
             return
@@ -45,19 +36,14 @@ class ProfileExportPlugin:
         if currentMapLayer.selectedFeatureCount() != 1:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Profile tool needs a single selected feature"),  QCoreApplication.translate("ProfileExportPlugin","Please select the line describing the profile and run the export profile tool again") )
             return
-            
-        selectedFeature = currentMapLayer.selectedFeatures()[0]
-
-        #profileGeometry = currentMapLayer.selectedFeatures()[0].geometry()
-        profileGeometry = selectedFeature.geometry()
-        #print profileGeometry
-        #print profileGeometry.exportToWkt()
         
         #geometry needs to be a line
-        if profileGeometry.wkbType() != QGis.WKBLineString:
+        selectedFeature = currentMapLayer.selectedFeatures()[0]
+        profileGeometry = selectedFeature.geometry()
+        if QgsWkbTypes.flatType( profileGeometry.wkbType() ) != QgsWkbTypes.LineString:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Selected feature is not a linestring"),  QCoreApplication.translate( "ProfileExportPlugin", "Please select a single linestring and run the export profile tool again") )
             return
-            
+        
         profilePolyLine = profileGeometry.asPolyline()
         if len(profilePolyLine) < 2:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Not enough vertices" ),  QCoreApplication.translate( "ProfileExportPlugin", "The profile export plugin needs a line with two vertices") )
@@ -66,32 +52,27 @@ class ProfileExportPlugin:
             QMessageBox.warning( None,  QCoreApplication.translate( "ProfileExportPlugin", "Line has more than two vertices" ),  QCoreApplication.translate( "ProfileExportPlugin", "The selected line has more than two vertices. Only the first and the second are considered for profile computation") )
         
         startPoint = profilePolyLine[0]
-        #print startPoint
+        #print( startPoint )
         endPoint = profilePolyLine[1]
-        #print endPoint
+        #print( endPoint )
         
         #get input/output file, point distance, value tolerance
         dialog = ProfileExportDialog( self.mIface )
         if dialog.exec_() == QDialog.Accepted:
             self.writeOutputFile( dialog.rasterLayer(),  dialog.outputFile(),  dialog.pointDistance(),  dialog.maxValueTolerance(),  startPoint,  endPoint )
-    
+            
     def writeOutputFile(self,  inputRaster,  outputFile,  pointDistance,  maxValueTolerance,  startPoint,  endPoint):
-        #print inputRaster
-        #print outputFile
-        #print pointDistance
-        #print maxValueTolerance
-        
-        rasterLayer = QgsMapLayerRegistry.instance().mapLayer( inputRaster )
+        #debug
+        print (inputRaster)
+        print (outputFile)
+        print (pointDistance)
+        print (maxValueTolerance)
+            
+        rasterLayer = QgsProject.instance().mapLayer( inputRaster )
         if rasterLayer is None:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Raster layer invalid"),  QCoreApplication.translate( "ProfileExportPlugin", "The selected raster layer could not be loaded") )
             return
-            
-        #test if start and endpoint are within the raster layer, bail out if not
-        rasterExtent = rasterLayer.extent()
-        if not rasterExtent.contains( startPoint ) or not rasterExtent.contains( endPoint ):
-            QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Error"),  QCoreApplication.translate( "ProfileExportPlugin", "Both endpoints need to be inside the raster extent") )
-            return
-          
+        
         resultXmlDocument = QDomDocument()
         encodingInstruction = resultXmlDocument.createProcessingInstruction( "encoding",  "UTF-8" )
         resultXmlDocument.appendChild( encodingInstruction )
@@ -107,13 +88,6 @@ class ProfileExportPlugin:
         dx = profileTotalDx / profileLength * pointDistance
         dy = profileTotalDy / profileLength * pointDistance
         
-        #debug only: write exported coordinates to csv file
-        #debugFile = QFile( '/home/marco/tmp/debugfile.csv' )
-        #debugFile.open( QIODevice.WriteOnly )
-        #debugTextStream = QTextStream( debugFile )
-        #debugNPoints = 0
-        #debugTextStream.__lshift__("n,x,y,z").__lshift__("\n")
-        
         dist = 0.0
         lastDist = 0.0
         currentValue = 0.0
@@ -122,7 +96,7 @@ class ProfileExportPlugin:
         currentX = startPoint.x()
         currentY = startPoint.y()
         while dist < profileLength:
-            currentValue = self.firstRasterBandValue( QgsPoint( currentX,  currentY ),  rasterLayer )
+            currentValue = self.firstRasterBandValue( QgsPointXY( currentX,  currentY ),  rasterLayer )
             
             #elevation tolerance between two points exceeded. Insert additional points
             if( currentValue - lastValue ) > maxValueTolerance: 
@@ -136,29 +110,23 @@ class ProfileExportPlugin:
                     xIntermediate = currentX - dx + dxIntermediate
                     yIntermediate = currentY - dy + dyIntermediate
                     intermediateDist = math.sqrt( dxIntermediate * dxIntermediate + dyIntermediate * dyIntermediate )
-                    currentIntermediateValue = self.firstRasterBandValue( QgsPoint( xIntermediate,  yIntermediate ),  rasterLayer )
+                    currentIntermediateValue = self.firstRasterBandValue( QgsPointXY( xIntermediate,  yIntermediate ),  rasterLayer )
                     self.addElevationPoint( resultXmlDocument,  documentElement, dist - pointDistance + intermediateDist,  dIntermediatePointDist,    currentIntermediateValue - lastIntermediateValue,  currentIntermediateValue - firstZ,  xIntermediate, yIntermediate )
-                    #debugTextStream.__lshift__(QString.number(debugNPoints)).__lshift__(",").__lshift__( QString.number(xIntermediate, 'f',  8) ).__lshift__(",").__lshift__( QString.number( yIntermediate, 'f', 8 ) ).__lshift__(",").__lshift__(QString.number( currentIntermediateValue, 'f', 8 ) ).__lshift__("\n")
-                    #debugNPoints += 1
                     lastIntermediateValue = currentIntermediateValue
                     lastDist = dist - pointDistance + intermediateDist
             
             self.addElevationPoint( resultXmlDocument,  documentElement,  dist,  dist - lastDist,  currentValue - lastValue,  currentValue - firstZ,  currentX,  currentY )
-            #debugTextStream.__lshift__(QString.number(debugNPoints)).__lshift__(",").__lshift__( QString.number(currentX, 'f', 8) ).__lshift__(",").__lshift__( QString.number( currentY, 'f', 8) ).__lshift__(",").__lshift__(QString.number( currentValue, 'f', 8 ) ).__lshift__("\n")
-            #debugNPoints += 1
             currentX += dx
             currentY += dy
             lastDist = dist
             dist += pointDistance
             lastValue = currentValue
-        
+            
         #last value normally does not fit into the point interval
         if currentX != endPoint.x() or currentY != entPoint.y():
             currentValue = self.firstRasterBandValue( endPoint,  rasterLayer )
             self.addElevationPoint( resultXmlDocument,  documentElement,  profileLength,  pointDistance - ( dist - profileLength ), currentValue - lastValue,  currentValue - firstZ,  endPoint.x(),  endPoint.y()  )
-            #debugTextStream.__lshift__(QString.number(debugNPoints)).__lshift__(",").__lshift__( QString.number(endPoint.x(), 'f', 8) ).__lshift__(",").__lshift__( QString.number( endPoint.y() , 'f', 8) ).__lshift__(",").__lshift__(QString.number( currentValue, 'f', 8 ) ).__lshift__("\n")
             
-        #debugFile.close()
         #write dom document to file
         resultXmlFile = QFile( outputFile )
         if not resultXmlFile.open( QIODevice.WriteOnly ):
@@ -170,8 +138,10 @@ class ProfileExportPlugin:
         resultTextStream.__lshift__( resultXmlDocument.toString() )
         resultXmlFile.close()
         QMessageBox.information( None,  QCoreApplication.translate( "ProfileExportPlugin","Export finished"),  QCoreApplication.translate( "ProfileExportPlugin", "The profile export is successfully finished"))
+            
+    
         
-    def addElevationPoint(self,  xmlDoc,  parentElement,  totDist,  dist,  dz,  z,  wgs_x,  wgs_y):
+    def addElevationPoint(self,  xmlDoc,  parentElement,  totDist,  dist,  dz,  z,  wgs_x,  wgs_y):  
         importGisElem = xmlDoc.createElement("import_gis")
         #dist
         distElem = xmlDoc.createElement("dist")
@@ -205,24 +175,13 @@ class ProfileExportPlugin:
         importGisElem.appendChild( koordNElem )
         
         parentElement.appendChild( importGisElem )
-
-    def firstRasterBandValue_1_8(self,  point,  rasterLayer):
-        res,  ident = rasterLayer.identify( point )
-
-        if len(ident) < 1:
-            return -9999
-        return ident[ ident.keys()[0] ].toDouble()[0]
         
-    def firstRasterBandValue_13(self,  point,  rasterLayer ):
-        identifyResult = rasterLayer.dataProvider().identify( point, QgsRasterDataProvider.IdentifyFormatValue )
-        if len(identifyResult) < 1:
-            return -9999
-        return pyfloat( identifyResult[ identifyResult.keys()[0] ] )
-
-    def firstRasterBandValue_2_0(self,  point,  rasterLayer):
+        
+    
+    def firstRasterBandValue(self,  point,  rasterLayer):
         identifyResult = rasterLayer.dataProvider().identify( point, QgsRaster.IdentifyFormatValue )
 
         if not identifyResult.isValid():
             return -9999
         results = identifyResult.results()
-        return pyfloat( results[ results.keys()[0] ] )
+        return results[1]

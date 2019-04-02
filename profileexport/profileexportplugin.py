@@ -92,6 +92,9 @@ class ProfileExportPlugin:
         lastDist = 0.0
         currentValue = 0.0
         firstZ = self.firstRasterBandValue( startPoint ,  rasterLayer )
+        if firstZ is None: #makes only sense if initial z is set
+            QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "First z value invalid"),  QCoreApplication.translate( "ProfileExportPlugin", "The first z-Value of the profile is invalid. Please make sure the profile start point is on the elevation model") )
+            return
         lastValue = firstZ
         currentX = startPoint.x()
         currentY = startPoint.y()
@@ -99,7 +102,7 @@ class ProfileExportPlugin:
             currentValue = self.firstRasterBandValue( QgsPointXY( currentX,  currentY ),  rasterLayer )
             
             #elevation tolerance between two points exceeded. Insert additional points
-            if( currentValue - lastValue ) > maxValueTolerance: 
+            if not currentValue is None and ( currentValue - lastValue ) > maxValueTolerance: 
                 nIntermediatePoints = int( (currentValue - lastValue ) / maxValueTolerance)
                 dIntermediatePointDist = math.sqrt(  ( dx / (nIntermediatePoints + 1) ) * ( dx / (nIntermediatePoints + 1) ) + ( dy / (nIntermediatePoints + 1) ) * ( dy / (nIntermediatePoints + 1) ) )
                 lastIntermediateValue = lastValue
@@ -111,11 +114,13 @@ class ProfileExportPlugin:
                     yIntermediate = currentY - dy + dyIntermediate
                     intermediateDist = math.sqrt( dxIntermediate * dxIntermediate + dyIntermediate * dyIntermediate )
                     currentIntermediateValue = self.firstRasterBandValue( QgsPointXY( xIntermediate,  yIntermediate ),  rasterLayer )
-                    self.addElevationPoint( resultXmlDocument,  documentElement, dist - pointDistance + intermediateDist,  dIntermediatePointDist,    currentIntermediateValue - lastIntermediateValue,  currentIntermediateValue - firstZ,  xIntermediate, yIntermediate )
+                    if not currentIntermediateValue is None and not lastIntermediateValue is None:
+                        self.addElevationPoint( resultXmlDocument,  documentElement, dist - pointDistance + intermediateDist,  dIntermediatePointDist,    currentIntermediateValue - lastIntermediateValue,  currentIntermediateValue - firstZ,  xIntermediate, yIntermediate )
                     lastIntermediateValue = currentIntermediateValue
                     lastDist = dist - pointDistance + intermediateDist
             
-            self.addElevationPoint( resultXmlDocument,  documentElement,  dist,  dist - lastDist,  currentValue - lastValue,  currentValue - firstZ,  currentX,  currentY )
+            if not currentValue is None:
+                self.addElevationPoint( resultXmlDocument,  documentElement,  dist,  dist - lastDist,  currentValue - lastValue,  currentValue - firstZ,  currentX,  currentY )
             currentX += dx
             currentY += dy
             lastDist = dist
@@ -125,7 +130,8 @@ class ProfileExportPlugin:
         #last value normally does not fit into the point interval
         if currentX != endPoint.x() or currentY != entPoint.y():
             currentValue = self.firstRasterBandValue( endPoint,  rasterLayer )
-            self.addElevationPoint( resultXmlDocument,  documentElement,  profileLength,  pointDistance - ( dist - profileLength ), currentValue - lastValue,  currentValue - firstZ,  endPoint.x(),  endPoint.y()  )
+            if not currentValue is None:
+                self.addElevationPoint( resultXmlDocument,  documentElement,  profileLength,  pointDistance - ( dist - profileLength ), currentValue - lastValue,  currentValue - firstZ,  endPoint.x(),  endPoint.y()  )
             
         #write dom document to file
         resultXmlFile = QFile( outputFile )

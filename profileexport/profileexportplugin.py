@@ -40,6 +40,7 @@ class ProfileExportPlugin:
         #geometry needs to be a line
         selectedFeature = currentMapLayer.selectedFeatures()[0]
         profileGeometry = selectedFeature.geometry()
+        profileGeometry.convertToSingleType()
         if QgsWkbTypes.flatType( profileGeometry.wkbType() ) != QgsWkbTypes.LineString:
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Selected feature is not a linestring"),  QCoreApplication.translate( "ProfileExportPlugin", "Please select a single linestring and run the export profile tool again") )
             return

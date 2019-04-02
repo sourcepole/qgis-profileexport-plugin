@@ -59,20 +59,20 @@ class ProfileExportPlugin:
         #get input/output file, point distance, value tolerance
         dialog = ProfileExportDialog( self.mIface )
         if dialog.exec_() == QDialog.Accepted:
-            self.writeOutputFile( dialog.rasterLayer(),  dialog.outputFile(),  dialog.pointDistance(),  dialog.maxValueTolerance(),  startPoint,  endPoint )
+            rasterLayer = QgsProject.instance().mapLayer( dialog.rasterLayer() )
+            if rasterLayer is None:
+                QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Raster layer invalid"),  QCoreApplication.translate( "ProfileExportPlugin", "The selected raster layer could not be loaded") )
+                return
             
-    def writeOutputFile(self,  inputRaster,  outputFile,  pointDistance,  maxValueTolerance,  startPoint,  endPoint):
-        #debug
-        print (inputRaster)
-        print (outputFile)
-        print (pointDistance)
-        print (maxValueTolerance)
+            #reproject startPoint, endPoint if they are not in the raster CRS
+            if rasterLayer.crs() != currentMapLayer.crs():
+                profileCoordTrans = QgsCoordinateTransform( currentMapLayer.crs(), rasterLayer.crs(), QgsProject.instance().transformContext() )
+                startPoint = profileCoordTrans.transform( startPoint.x(), startPoint.y() )
+                endPoint = profileCoordTrans.transform( endPoint.x(), endPoint.y() )
             
-        rasterLayer = QgsProject.instance().mapLayer( inputRaster )
-        if rasterLayer is None:
-            QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "Raster layer invalid"),  QCoreApplication.translate( "ProfileExportPlugin", "The selected raster layer could not be loaded") )
-            return
-        
+            self.writeOutputFile( rasterLayer,  dialog.outputFile(),  dialog.pointDistance(),  dialog.maxValueTolerance(),  startPoint,  endPoint )
+            
+    def writeOutputFile(self,  rasterLayer,  outputFile,  pointDistance,  maxValueTolerance,  startPoint,  endPoint):
         resultXmlDocument = QDomDocument()
         encodingInstruction = resultXmlDocument.createProcessingInstruction( "encoding",  "UTF-8" )
         resultXmlDocument.appendChild( encodingInstruction )

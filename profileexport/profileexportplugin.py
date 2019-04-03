@@ -103,7 +103,7 @@ class ProfileExportPlugin:
             currentValue = self.firstRasterBandValue( QgsPointXY( currentX,  currentY ),  rasterLayer )
             
             #elevation tolerance between two points exceeded. Insert additional points
-            if not currentValue is None and ( currentValue - lastValue ) > maxValueTolerance: 
+            if not currentValue is None and not lastValue is None and ( currentValue - lastValue ) > maxValueTolerance: 
                 nIntermediatePoints = int( (currentValue - lastValue ) / maxValueTolerance)
                 dIntermediatePointDist = math.sqrt(  ( dx / (nIntermediatePoints + 1) ) * ( dx / (nIntermediatePoints + 1) ) + ( dy / (nIntermediatePoints + 1) ) * ( dy / (nIntermediatePoints + 1) ) )
                 lastIntermediateValue = lastValue
@@ -120,7 +120,7 @@ class ProfileExportPlugin:
                     lastIntermediateValue = currentIntermediateValue
                     lastDist = dist - pointDistance + intermediateDist
             
-            if not currentValue is None:
+            if not currentValue is None and not lastValue is None:
                 self.addElevationPoint( resultXmlDocument,  documentElement,  dist,  dist - lastDist,  currentValue - lastValue,  currentValue - firstZ,  currentX,  currentY )
             currentX += dx
             currentY += dy

@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QCoreApplication, QFile, QIODevice, QObject, QTextStream
+from PyQt5.QtCore import QCoreApplication, QFile, QIODevice, QObject, QSettings, QTextStream, QTranslator
 from PyQt5.QtGui import QIcon
 from PyQt5.QtWidgets import QAction, QDialog, QMessageBox
 from PyQt5.QtXml import QDomDocument, QDomElement
 from qgis.core import *
 from qgis.gui import *
 import math
+import os
 from .profileexportdialog import ProfileExportDialog
 from .resources_rc import *
 
@@ -13,8 +14,21 @@ class ProfileExportPlugin:
     def __init__(self, iface ):
         self.mIface = iface
         
+        #load translation
+        self.plugin_dir = os.path.dirname(__file__)
+        locale = QSettings().value('locale/userLocale')[0:2]
+        locale_path = os.path.join(
+            self.plugin_dir,
+            'i18n',
+            'profileexport_{}.qm'.format(locale))
+
+        if os.path.exists(locale_path):
+            self.translator = QTranslator()
+            self.translator.load(locale_path)
+            QCoreApplication.installTranslator(self.translator)
+        
     def initGui(self):
-        self.mAction = QAction( QIcon(":/plugins/profileexport/seilkran.jpg"), "Profile export",  self.mIface.mainWindow() )
+        self.mAction = QAction( QIcon(":/plugins/profileexport/seilkran.jpg"), QCoreApplication.translate( "ProfileExportPlugin","Profile export" ),  self.mIface.mainWindow() )
         self.mAction.triggered.connect( self.run )
         self.mIface.addToolBarIcon( self.mAction )
         

@@ -7,6 +7,7 @@ author=Sourcepole
 email=info@sourcepole.ch
 tracker=https://github.com/sourcepole/qgis-profileexport-plugin/issues
 repository=https://github.com/sourcepole/qgis-profileexport-plugin
+about=A plugin to export raster profiles to xml files. These xml files can then be used in the SeilkranPROjekt software
 
 icon=./seilkran.jpg
 

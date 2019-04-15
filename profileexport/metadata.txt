@@ -4,7 +4,9 @@ qgisMinimumVersion=3.0
 version=0.5.0
 description=A plugin to export raster profiles to xml files
 author=Sourcepole
-email=qgis@sourcepole.ch
+email=info@sourcepole.ch
+tracker=https://github.com/sourcepole/qgis-profileexport-plugin/issues
+repository=https://github.com/sourcepole/qgis-profileexport-plugin
 
 icon=./seilkran.jpg
 

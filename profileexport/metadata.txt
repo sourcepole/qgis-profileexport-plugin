@@ -1,14 +1,13 @@
 [general]
 name=Profile Export
 qgisMinimumVersion=3.0
-
+version=0.5.0
 description=A plugin to export raster profiles to xml files
-version=0.4.0
 author=Sourcepole
 email=qgis@sourcepole.ch
 
 icon=./seilkran.jpg
 
-changelog=0.4
-    - port to QGIS 3.x
+changelog=0.5
+    - port to QGIS 3.x, funded by Bildungszentrum Wald Lyss / Centre forestier de formation Lyss and Bildungszentrum Wald Maienfeld
     - compatibility port to 2.0 API

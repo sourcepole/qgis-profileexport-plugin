@@ -1,7 +1,7 @@
 [general]
 name=Profile Export
 qgisMinimumVersion=3.0
-version=0.5.0
+version=0.5.1
 description=A plugin to export raster profiles to xml files
 author=Sourcepole
 email=info@sourcepole.ch
@@ -10,6 +10,9 @@ repository=https://github.com/sourcepole/qgis-profileexport-plugin
 about=A plugin to export raster profiles to xml files. These xml files can then be used in the SeilkranPROjekt software
 
 icon=./seilkran.jpg
+
+changelog=0.51
+    - fixed wrong z0 value if intermediate points are inserted into the profile
 
 changelog=0.5
     - port to QGIS 3.x, funded by Bildungszentrum Wald Lyss / Centre forestier de formation Lyss and Bildungszentrum Wald Maienfeld

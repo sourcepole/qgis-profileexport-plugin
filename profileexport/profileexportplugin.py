@@ -106,6 +106,8 @@ class ProfileExportPlugin:
         dist = 0.0
         lastDist = 0.0
         currentValue = 0.0
+        sumDz = 0.0 #Just to check if sum(dz) equals (z - z_start)
+        
         firstZ = self.firstRasterBandValue( startPoint ,  rasterLayer )
         if firstZ is None: #makes only sense if initial z is set
             QMessageBox.critical( None,  QCoreApplication.translate( "ProfileExportPlugin", "First z value invalid"),  QCoreApplication.translate( "ProfileExportPlugin", "The first z-Value of the profile is invalid. Please make sure the profile start point is on the elevation model") )
@@ -129,13 +131,15 @@ class ProfileExportPlugin:
                     yIntermediate = currentY - dy + dyIntermediate
                     intermediateDist = math.sqrt( dxIntermediate * dxIntermediate + dyIntermediate * dyIntermediate )
                     currentIntermediateValue = self.firstRasterBandValue( QgsPointXY( xIntermediate,  yIntermediate ),  rasterLayer )
-                    if not currentIntermediateValue is None and not lastIntermediateValue is None:
-                        self.addElevationPoint( resultXmlDocument,  documentElement, dist - pointDistance + intermediateDist,  dIntermediatePointDist,    currentIntermediateValue - lastIntermediateValue,  currentIntermediateValue - firstZ,  xIntermediate, yIntermediate )
-                    lastIntermediateValue = currentIntermediateValue
+                    if not currentIntermediateValue is None and not lastValue is None:
+                        self.addElevationPoint( resultXmlDocument,  documentElement, dist - pointDistance + intermediateDist,  dIntermediatePointDist,    currentIntermediateValue - lastValue,  currentIntermediateValue - firstZ,  xIntermediate, yIntermediate )
+                        sumDz = sumDz + ( currentIntermediateValue - lastValue )
+                    lastValue = currentIntermediateValue
                     lastDist = dist - pointDistance + intermediateDist
             
             if not currentValue is None and not lastValue is None:
                 self.addElevationPoint( resultXmlDocument,  documentElement,  dist,  dist - lastDist,  currentValue - lastValue,  currentValue - firstZ,  currentX,  currentY )
+                sumDz = sumDz + currentValue - lastValue
             currentX += dx
             currentY += dy
             lastDist = dist
@@ -147,6 +151,12 @@ class ProfileExportPlugin:
             currentValue = self.firstRasterBandValue( endPoint,  rasterLayer )
             if not currentValue is None:
                 self.addElevationPoint( resultXmlDocument,  documentElement,  profileLength,  pointDistance - ( dist - profileLength ), currentValue - lastValue,  currentValue - firstZ,  endPoint.x(),  endPoint.y()  )
+                sumDz = sumDz + currentValue - lastValue
+                
+        #debug
+        #print( 'sumDz: {}'.format( sumDz ) )
+        #print( 'z0 : {}'.format( currentValue - firstZ ) )
+        
             
         #write dom document to file
         resultXmlFile = QFile( outputFile )
@@ -158,7 +168,11 @@ class ProfileExportPlugin:
         resultTextStream.setCodec("UTF-8")
         resultTextStream.__lshift__( resultXmlDocument.toString() )
         resultXmlFile.close()
-        QMessageBox.information( None,  QCoreApplication.translate( "ProfileExportPlugin","Export finished"),  QCoreApplication.translate( "ProfileExportPlugin", "The profile export is successfully finished"))
+        
+        if abs( sumDz - (currentValue - firstZ ) ) > 0.000001:
+            QMessageBox.critical( None, QCoreApplication.translate( "ProfileExportPlugin","Error"), QCoreApplication.translate( "ProfileExportPlugin","An error occured during checking the written elevation values. The values might not be correct" ) )
+        else:
+            QMessageBox.information( None,  QCoreApplication.translate( "ProfileExportPlugin","Export finished"),  QCoreApplication.translate( "ProfileExportPlugin", "The profile export is successfully finished"))
             
     
         
